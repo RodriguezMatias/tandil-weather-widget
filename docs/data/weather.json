@@ -1,0 +1,20 @@
+{
+  "data": {
+    "date": "13/07/26",
+    "time": "17:00:31",
+    "tempC": 8.8,
+    "humidity": 77,
+    "dewpointC": 5,
+    "windAvgKmh": 9,
+    "windGustKmh": 9,
+    "windBearing": 10,
+    "windCompass": "N",
+    "rainRateMm": 0,
+    "rainTodayMm": 0,
+    "pressureHpa": 996.1,
+    "pressureTrend": -0.5,
+    "tempLowC": -0.7,
+    "tempLowTime": "06:00"
+  },
+  "fetchedAt": "2026-07-13T20:00:20.037Z"
+}
