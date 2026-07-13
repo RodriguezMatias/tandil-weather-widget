@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Tandil — Estación Meteorológica</title>
+<style>
+  :root {
+    --bg: #e9eef1;
+    --card: #ffffff;
+    --border: #d3dde2;
+    --text: #17242c;
+    --muted: #5d7078;
+    --accent: #2f6690;
+    --warm: #b8683a;
+    --rule: #c7d3d8;
+    --shadow: 0 1px 2px rgba(23,36,44,0.04), 0 8px 24px rgba(23,36,44,0.06);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0e161b;
+      --card: #16212a;
+      --border: #26343d;
+      --text: #e6edf1;
+      --muted: #93a5ad;
+      --accent: #7cb6dd;
+      --warm: #d99464;
+      --rule: #2a3a44;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 12px 28px rgba(0,0,0,0.35);
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 16px;
+    background: var(--bg);
+    font-family: ui-sans-serif, "Segoe UI", -apple-system, Roboto, sans-serif;
+    color: var(--text);
+  }
+
+  .card {
+    width: 100%;
+    max-width: 380px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    transition: opacity 0.15s ease;
+  }
+
+  .card.loading { opacity: 0.55; }
+
+  .head {
+    padding: 18px 22px 14px;
+    border-bottom: 1px solid var(--rule);
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .head h1 {
+    margin: 0;
+    font-family: Georgia, "Iowan Old Style", "Times New Roman", serif;
+    font-size: 21px;
+    font-weight: 400;
+    letter-spacing: 0.2px;
+  }
+
+  .head .place { color: var(--muted); font-size: 12px; }
+
+  .stamp {
+    padding: 10px 22px;
+    font-family: ui-monospace, "SF Mono", Consolas, "Cascadia Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .primary {
+    padding: 26px 22px 20px;
+    display: flex;
+    align-items: flex-end;
+    gap: 18px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .temp {
+    font-family: ui-monospace, "SF Mono", Consolas, "Cascadia Mono", monospace;
+    font-size: 56px;
+    line-height: 1;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+
+  .temp small {
+    font-size: 24px;
+    font-weight: 400;
+    color: var(--muted);
+    vertical-align: super;
+  }
+
+  .primary-meta { display: flex; flex-direction: column; gap: 4px; padding-bottom: 6px; }
+  .cond { font-size: 13px; color: var(--accent); font-weight: 600; }
+  .lowline { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; }
+
+  .cell {
+    padding: 14px 22px;
+    border-bottom: 1px solid var(--rule);
+    border-right: 1px solid var(--rule);
+  }
+  .cell:nth-child(2n) { border-right: none; }
+  .cell:nth-last-child(-n+2) { border-bottom: none; }
+
+  .label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin: 0 0 5px;
+  }
+
+  .value {
+    font-family: ui-monospace, "SF Mono", Consolas, "Cascadia Mono", monospace;
+    font-size: 17px;
+    font-variant-numeric: tabular-nums;
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+  }
+
+  .value .unit {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: ui-sans-serif, "Segoe UI", -apple-system, Roboto, sans-serif;
+  }
+
+  .trend-up { color: var(--warm); }
+
+  .foot {
+    padding: 14px 22px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .foot .note { font-size: 11px; color: var(--muted); }
+
+  button#refresh {
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent);
+    background: transparent;
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    padding: 7px 12px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  button#refresh:hover { background: var(--accent); color: var(--card); }
+  button#refresh:disabled { opacity: 0.5; cursor: default; background: transparent; color: var(--accent); }
+  button#refresh:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .error {
+    margin: 0 22px 16px;
+    padding: 10px 12px;
+    border: 1px solid var(--warm);
+    color: var(--warm);
+    font-size: 12px;
+    border-radius: 4px;
+    display: none;
+  }
+  .error.show { display: block; }
+
+  .settings {
+    padding: 12px 22px;
+    border-top: 1px solid var(--rule);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .settings input {
+    width: 52px;
+    font: inherit;
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 4px 6px;
+    text-align: right;
+  }
+
+  .settings input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  .countdown {
+    padding: 0 22px 12px;
+    font-family: ui-monospace, "SF Mono", Consolas, "Cascadia Mono", monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .countdown #countdown-time {
+    font-size: 12px;
+    color: var(--text);
+  }
+
+  .countdown #countdown-log {
+    margin-top: 3px;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.01em;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card { transition: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="card" id="card">
+    <div class="head">
+      <h1>Tandil</h1>
+      <span class="place">Buenos Aires, AR</span>
+    </div>
+    <div class="stamp">
+      <span id="date">—</span>
+      <span id="time">—</span>
+    </div>
+
+    <div class="primary">
+      <div class="temp" id="temp">—<small>°C</small></div>
+      <div class="primary-meta">
+        <div class="cond" id="cond">Cargando…</div>
+        <div class="lowline" id="lowline">&nbsp;</div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="cell">
+        <p class="label">Humedad</p>
+        <div class="value" id="humidity">—<span class="unit">%</span></div>
+      </div>
+      <div class="cell">
+        <p class="label">Punto de rocío</p>
+        <div class="value" id="dewpoint">—<span class="unit">°C</span></div>
+      </div>
+      <div class="cell">
+        <p class="label">Viento</p>
+        <div class="value" id="wind">—<span class="unit">km/h</span></div>
+      </div>
+      <div class="cell">
+        <p class="label">Lluvia hoy</p>
+        <div class="value" id="rain">—<span class="unit">mm</span></div>
+      </div>
+      <div class="cell">
+        <p class="label">Presión</p>
+        <div class="value" id="pressure">—<span class="unit">hPa</span></div>
+      </div>
+      <div class="cell">
+        <p class="label">Tendencia</p>
+        <div class="value" id="trend">—<span class="unit">hPa/hr</span></div>
+      </div>
+    </div>
+
+    <p class="error" id="error"></p>
+
+    <div class="settings">
+      <label for="interval">Actualizar cada</label>
+      <input type="number" id="interval" min="1" max="180" step="1" value="10" />
+      <span>min</span>
+    </div>
+
+    <div class="countdown">
+      <div id="countdown-time">próxima actualización en —</div>
+      <div id="countdown-log">—</div>
+    </div>
+
+    <div class="foot">
+      <span class="note" id="fetched-note">—</span>
+      <button id="refresh" type="button">Actualizar</button>
+    </div>
+  </div>
+
+  <script>
+    const els = {
+      date: document.getElementById('date'),
+      time: document.getElementById('time'),
+      temp: document.getElementById('temp'),
+      cond: document.getElementById('cond'),
+      lowline: document.getElementById('lowline'),
+      humidity: document.getElementById('humidity'),
+      dewpoint: document.getElementById('dewpoint'),
+      wind: document.getElementById('wind'),
+      rain: document.getElementById('rain'),
+      pressure: document.getElementById('pressure'),
+      trend: document.getElementById('trend'),
+      fetchedNote: document.getElementById('fetched-note'),
+      error: document.getElementById('error'),
+      card: document.getElementById('card'),
+      button: document.getElementById('refresh'),
+      interval: document.getElementById('interval'),
+      countdownTime: document.getElementById('countdown-time'),
+      countdownLog: document.getElementById('countdown-log'),
+    };
+
+    // Jitter: cada ciclo suma hasta un 40% extra al intervalo base para que el
+    // patrón de pedidos no sea un período fijo y perfecto.
+    const JITTER_RATIO = 0.4;
+
+    let currentIntervalMinutes = 10;
+    let nextFireAt = null;
+    let fetchTimerId = null;
+
+    function formatDuration(ms) {
+      const totalSeconds = Math.max(0, Math.round(ms / 1000));
+      const m = Math.floor(totalSeconds / 60);
+      const s = totalSeconds % 60;
+      return `${m}:${String(s).padStart(2, '0')}`;
+    }
+
+    function scheduleNext(minutes) {
+      currentIntervalMinutes = minutes;
+      if (fetchTimerId) clearTimeout(fetchTimerId);
+
+      const baseMs = minutes * 60 * 1000;
+      const jitterMs = Math.random() * baseMs * JITTER_RATIO;
+      const totalMs = baseMs + jitterMs;
+
+      nextFireAt = Date.now() + totalMs;
+      fetchTimerId = setTimeout(refresh, totalMs);
+
+      els.countdownLog.textContent = `base ${minutes} min + jitter aleatorio ${formatDuration(jitterMs)}`;
+      updateCountdown();
+    }
+
+    function updateCountdown() {
+      if (!nextFireAt) return;
+      els.countdownTime.textContent = 'próxima actualización en ' + formatDuration(nextFireAt - Date.now());
+    }
+
+    setInterval(updateCountdown, 1000);
+
+    function formatDate(ddmmyy) {
+      const [d, m, y] = ddmmyy.split('/');
+      const months = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+      return `${parseInt(d, 10)} ${months[parseInt(m, 10) - 1]} 20${y}`;
+    }
+
+    function condition(data) {
+      if (data.rainRateMm > 0) return 'Lluvia';
+      if (data.tempC - data.dewpointC <= 1 && data.windAvgKmh <= 3) return 'Calma · niebla probable';
+      if (data.windAvgKmh === 0) return 'Calma';
+      return `Viento ${data.windCompass}`;
+    }
+
+    function render(data) {
+      els.date.textContent = formatDate(data.date);
+      els.time.textContent = data.time + ' ART';
+      els.temp.innerHTML = `${data.tempC.toFixed(1)}<small>°C</small>`;
+      els.cond.textContent = condition(data);
+      els.lowline.textContent = `mín. hoy ${data.tempLowC.toFixed(1)}° a las ${data.tempLowTime}`;
+      els.humidity.innerHTML = `${data.humidity.toFixed(0)}<span class="unit">%</span>`;
+      els.dewpoint.innerHTML = `${data.dewpointC.toFixed(1)}<span class="unit">°C</span>`;
+      els.wind.innerHTML = `${data.windCompass} — ${data.windAvgKmh.toFixed(0)}<span class="unit">km/h</span>`;
+      els.rain.innerHTML = `${data.rainTodayMm.toFixed(1)}<span class="unit">mm</span>`;
+      els.pressure.innerHTML = `${data.pressureHpa.toFixed(1)}<span class="unit">hPa</span>`;
+      const arrow = data.pressureTrend > 0 ? '▲' : data.pressureTrend < 0 ? '▼' : '▬';
+      els.trend.innerHTML = `${arrow} ${Math.abs(data.pressureTrend).toFixed(1)}<span class="unit">hPa/hr</span>`;
+      els.trend.className = 'value' + (data.pressureTrend > 0 ? ' trend-up' : '');
+    }
+
+    async function refresh() {
+      els.card.classList.add('loading');
+      els.button.disabled = true;
+      els.error.classList.remove('show');
+      try {
+        const payload = await window.weatherApi.getWeather();
+        render(payload.data);
+        const fetchedAt = new Date(payload.fetchedAt);
+        els.fetchedNote.textContent = 'actualizado ' + fetchedAt.toLocaleTimeString('es-AR');
+      } catch (err) {
+        els.error.textContent = 'No se pudo actualizar: ' + err.message;
+        els.error.classList.add('show');
+      } finally {
+        els.card.classList.remove('loading');
+        els.button.disabled = false;
+        scheduleNext(currentIntervalMinutes);
+      }
+    }
+
+    async function initSettings() {
+      const settings = await window.weatherApi.getSettings();
+      els.interval.value = settings.intervalMinutes;
+      currentIntervalMinutes = settings.intervalMinutes;
+    }
+
+    els.interval.addEventListener('change', async () => {
+      let minutes = parseInt(els.interval.value, 10);
+      if (!Number.isFinite(minutes) || minutes < 1) minutes = 1;
+      if (minutes > 180) minutes = 180;
+      els.interval.value = minutes;
+      await window.weatherApi.setSettings({ intervalMinutes: minutes });
+      scheduleNext(minutes);
+    });
+
+    els.button.addEventListener('click', refresh);
+    (async () => {
+      await initSettings();
+      await refresh();
+    })();
+  </script>
+</body>
+</html>
