@@ -1,20 +1,20 @@
 {
   "data": {
     "date": "14/07/26",
-    "time": "19:14:12",
-    "tempC": 8.9,
-    "humidity": 96,
-    "dewpointC": 8.3,
-    "windAvgKmh": 5,
-    "windGustKmh": 4,
-    "windBearing": 62,
+    "time": "21:08:55",
+    "tempC": 7.9,
+    "humidity": 98,
+    "dewpointC": 7.6,
+    "windAvgKmh": 1,
+    "windGustKmh": 1,
+    "windBearing": 75,
     "windCompass": "ENE",
     "rainRateMm": 0,
     "rainTodayMm": 0,
-    "pressureHpa": 991.2,
+    "pressureHpa": 991.8,
     "pressureTrend": 0.1,
     "tempLowC": 3.1,
     "tempLowTime": "03:08"
   },
-  "fetchedAt": "2026-07-14T22:13:53.883Z"
+  "fetchedAt": "2026-07-15T00:09:10.055Z"
 }
